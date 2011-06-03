@@ -345,7 +345,7 @@ class MyCourses(Crawler):
 				if row.hasClass( "d_gd" ):
 					# save the post as a file
 					file = open( path + "/News/" + title + ".txt", 'w')			
-					file.write( row.find( "div.D2LRichText" ).text().encode( 'ASCII', 'ignore' ) )
+					file.write( row.find( "div.drt" ).text().encode( 'ASCII', 'ignore' ) )
 					file.close()
 					continue
 	
