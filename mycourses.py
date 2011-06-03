@@ -19,6 +19,7 @@ import string
 import time
 import re
 import demjson
+import shutil
 from pyquery import PyQuery as pq
 from lxml import etree
 from urlparse import urlparse
@@ -210,7 +211,7 @@ class MyCourses(Crawler):
 		return False
 	
 	# download a single course
-	def download_course( self, link, path ):
+	def download_course( self, link, path, title ):
 		course = self.get( link )
 		if course:			
 			self.read_rpc_key( course )
@@ -220,6 +221,8 @@ class MyCourses(Crawler):
 				self.download_course_content( course, path )
 			if self.options.save_dropbox == True:
 				self.download_course_dropbox( course, path )
+			if self.options.zip_course == True:
+				self.zip_course( path, title )
 			return True
 		return False
 	
@@ -349,17 +352,39 @@ class MyCourses(Crawler):
 					file.close()
 					continue
 	
+	def zip_course( self, path, title ):
+		self.debug( 2, 0, "Zipping directory '" + path + "'" )
+		import zipfile
+		try:
+		    import zlib
+		    compression = zipfile.ZIP_DEFLATED
+		except:
+		    compression = zipfile.ZIP_STORED	
+		filename = re.sub(r'\.\.+', '.', path + ".zip" )	
+		zip_file = zipfile.ZipFile( filename, "w" )
+		self.zip_directory( zip_file, compression, path, "" )
+		shutil.rmtree( path )
+	
+	def zip_directory( self, zip_file, compression, directory, virtual_dir ):
+		for file in os.listdir( directory ):
+			full_path = os.path.join( directory, file )
+			if os.path.isfile( full_path ):
+				self.debug( 3, 0, "Adding file '" + os.path.join( virtual_dir, file ) + "' to zip" )
+				zip_file.write( full_path, os.path.join( virtual_dir, file ), compression )
+			elif os.path.isdir( full_path ):
+				self.zip_directory( zip_file, compression, full_path, os.path.join( virtual_dir, file ) )
+	
 	# grab a list of courses and download each one of them
 	def download_courses( self ):
 		# for each course link returned after logging in
 		for index, link in enumerate( self.course_links ):
 			course_link = pq( link )
 			href = course_link.attr[ "href" ]
-			title = self.clean_chars( course_link.text() )
+			title = re.sub(r'\s\s+', ' ', self.clean_chars( course_link.text() ) )
 			path = self.options.output
 			if os.path.exists( path + "/" + title ) == 0:
 				os.makedirs( path + "/" + title )
-			if self.download_course( href, path + "/" + title ):
+			if self.download_course( href, path + "/" + title, title ):
 				self.debug( 0, 2, "Course '" + title + "' Successfully Saved!" )
 			else:
 				self.debug( 0, 0, "Course '" + title + "' Failed To Saved!" )
@@ -373,6 +398,7 @@ parser.add_option("-n", "--news", dest="save_news", help="save course news", act
 parser.add_option("-c", "--content", dest="save_content", help="save course content", action="store_true", default=False)
 parser.add_option("-x", "--crossdomain", dest="crossdomain", help="save course content from outside of domain", action="store_true", default=False)
 parser.add_option("-d", "--dropbox", dest="save_dropbox", help="save course dropbox", action="store_true", default=False)
+parser.add_option("-z", "--zip", dest="zip_course", help="zip each course directory", action="store_true", default=False)
 (options, args) = parser.parse_args()
 
 mycourses = MyCourses( "https://mycourses.rit.edu", options )
