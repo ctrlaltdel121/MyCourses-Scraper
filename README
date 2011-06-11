@@ -8,12 +8,23 @@ python mycourses.py --output ~/mycourses_dump --crossdomain --content --dropbox 
 python mycourses.py --output ~/mycourses_dump --content --dropbox --zip
 python mycourses.py --output ~/mycourses_dump --content --dropbox
 
-[Requirements]
-This script was developed on Ubuntu Server 10.10 and 11.04 with the following packages installed:
+[Required Software & Packages]
+Python 2.7.1
+lxml
+pyquery
+demjson
 
-libxml2-dev
-libxslt1-dev
-python-lxml
-python-pyquery
-python-httplib2
-python-demjson
+[Ubuntu Server Installation]
+
+sudo apt-get install libxml2-dev libxslt1-dev python-lxml python-pyquery python-httplib2 python-demjson
+
+[Windows 7 64-bit Installation]
+
+Download and install python 2.7.1 64-bit: http://www.python.org/ftp/python/2.7.1/python-2.7.1.amd64.msi
+Download easy_install 64-bit to python directory: http://peak.telecommunity.com/dist/ez_setup.py
+Install easy_install: C:\Python27>python ez_setup.py
+Install lxml: C:\Python27\Scripts>easy_install.exe lxml
+Install pyquery: C:\Python27\Scripts>easy_install.exe pyquery
+Install demjson: C:\Python27\Scripts>easy_install.exe demjson
+
+C:\Python27>python mycourses.py --output c:\mycourses --dropbox --content --verbose 2 --delay 0
