@@ -126,7 +126,7 @@ class Crawler:
 			address = self.get_address( file )
 		file_name = file_path.rsplit("/",1)[1]
 		# if address and filenames was parsed and either crossdomain is allowed or the file exists on the MyCourses domain
-		if address[-1] != "/" and file_name != "" and ( self.options.crossdomain == True or file_path.find( self.address ) != -1 ):
+		if address[-1] != "/" and file_name != "" and ( self.options.crossdomain == True or address.find( self.address ) != -1 ):
 			self.debug( 2, 104, "Downloading file '" + file + "' to '" + path + "' as '" + name + "'" )
 			response = self.request( address, None, False )
 			# write the binary to a file
