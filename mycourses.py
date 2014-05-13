@@ -109,8 +109,8 @@ class Crawler:
 	
 	# send a request to the server and expect binary as a result
 	def download_binary( self, file, path, name, encode = True ):			
-		if os.path.exists( path + "/" + name ) != 0:
-			return True
+		while os.path.exists( path + "/" + name ) != 0:
+			name = name+'_1'
 		file_path_chunks = file.rsplit("?",1)	
 		# ignore the querystring
 		file_path = file_path_chunks[0]	
@@ -127,13 +127,21 @@ class Crawler:
 		file_name = file_path.rsplit("/",1)[1]
 		# if address and filenames was parsed and either crossdomain is allowed or the file exists on the MyCourses domain
 		if address[-1] != "/" and file_name != "" and ( self.options.crossdomain == True or address.find( self.address ) != -1 ):
-			self.debug( 2, 104, "Downloading file '" + file + "' to '" + path + "' as '" + name + "'" )
-			response = self.request( address, None, False )
-			# write the binary to a file
-			if response:
+			self.debug( 1, 104, "Downloading file '" + file + "' to '" + path + "' as '" + name + "'" )
+			response = None
+                        count = 0;
+                        while not response:
+                            response = self.request( address, None, False )
+			    # write the binary to a file
+			    if response:
 				file = open( path + "/" + name, 'wb')	
 				file.write( response )
 				file.close()
+                                return
+                            print "Waiting for the URL to exist"
+                            time.sleep(5)
+                            count = count + 1
+                            if count > 5: return
 
 	# clean a unicode string and return ascii
 	def clean_unicode( self, data ):
@@ -173,12 +181,16 @@ class MyCourses(Crawler):
 				# send post to the login form's action URL
 				login_page = self.post( login_form.attr[ "action" ], { 'username' : username, 'password' : password } )
 				if login_page:
+                        #                print login_page
 					#login_page_table = login_page.find("table#z_u")
-					login_page_table = login_page.find("ul#z_v")
-					if login_page_table:
+					#login_page_table = login_page.find("")
+                                        #print login_page_table
+					#if login_page_table:
+                                        #        print "got login page table"
 						# grab each course link -- The "title" attribute of these links start with "Enter".
-						self.course_links = login_page_table.find( "div.dco_c div.dco_c ul.dl_ci li a[title~=\"Enter\"]" )
-						return True
+					self.course_links = login_page.find( "a[title~=\"Enter\"]" )
+					#print self.course_links
+                                        return True
 		return False
 	
 	# grab the key needed for making AJAX RPC calls
@@ -202,7 +214,9 @@ class MyCourses(Crawler):
 	
 	# grab a link from the course's navigation bar by its link text
 	def get_course_link( self, course, content ):
-		content_links = course.find( "div#d_navBar a[href]" )
+                #print "\n\n ######################################### \n\n course page being searched: %s\n\n\n ############################\n\n" %course
+		content_links = course.find( "a.d2l-navbar-link" )
+                #print content_links
 		for index, link in enumerate( content_links ):
 			link = pq( link )
 			label = link.find( "span" )
@@ -213,6 +227,7 @@ class MyCourses(Crawler):
 	# download a single course
 	def download_course( self, link, path, title ):
 		course = self.get( link )
+                #print "download_course: course=%s" %course
 		if course:			
 			self.read_rpc_key( course )
 			if self.options.save_news == True:
@@ -271,7 +286,7 @@ class MyCourses(Crawler):
 		# download the dropbox submissions page
 		submissions = self.get( link )
 		if submissions:
-			submissions_table = submissions.find( "table#z_e" )
+			submissions_table = submissions.find( "table#z_g" ) + submissions.find("table#z_e")
 			if submissions_table:
 				submissions_table_rows = submissions_table.find( "tr" )
 				if submissions_table_rows:
@@ -295,24 +310,20 @@ class MyCourses(Crawler):
 		if link:
 			# download the course content page
 			course_content = self.get( link )
+
 			if course_content:			
-				course_content_table = course_content( "table#z_o" )
-				if course_content_table:
-					directory = path + "/Content"
-					# for each possible content file/folder
-					for index, row in enumerate( course_content_table.find( "td.d_gn" ) ):
-						row = pq( row )						
-						if os.path.exists( directory ) == 0:
-							os.makedirs( directory )
-						link = row.find( "a" )
-						if link:
-							# download a content file
-							self.download_course_content_file( course, link.attr[ "href" ], self.clean_chars( link.text() ), directory )
-						else:
-							# change directory to a new content folder
-							directory = path + "/Content/" + self.clean_chars( row.text() )
-							continue							
-	
+				directory = path + "/Content"
+                                if not os.path.exists(directory):
+                                    os.mkdir(directory)
+				button_area = course_content.find("div#SyllabusMenuPlaceholderId")
+                                button_id = button_area.find('a').eq(0).attr['id']
+				resp = self.request(link[:-4]+'startdownload/InitiateCourseDownload?openerId=%s' %button_id, None, False)
+				s = resp[[n for n in xrange(len(resp)) if resp.find('D2L.LP.Web.UI.Rpc.Connect', n) == n][1]:]
+				g = s[:s.find('Cancel')-2].replace('\\', '')
+                                link = g[61:] + '/Download'
+                                self.download_binary(link, path, 'content.zip')
+                                
+
 	# download the content file using an AJAX RPC call to get the URL of the file
 	def download_course_content_file( self, course, link, name, path ):			
 		params = self.get_url_params( link )
@@ -402,5 +413,5 @@ parser.add_option("-z", "--zip", dest="zip_course", help="zip each course direct
 (options, args) = parser.parse_args()
 
 mycourses = MyCourses( "https://mycourses.rit.edu", options )
-if mycourses.login( raw_input( "Username: " ), getpass.getpass( prompt='Password: ' ) ):
+if mycourses.login( raw_input('Enter Username: '),  getpass.getpass(prompt='Password: ')):
 	mycourses.download_courses()
