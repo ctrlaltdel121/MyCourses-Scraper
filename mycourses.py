@@ -6,7 +6,7 @@ When in a course, this script will dump all the news, course content and dropbox
 After running the script you should have a directory that represents each course which contains that course's content.
 """
 
-__author__ = 'Zach Szafran, Geoffrey Anderson'
+__author__ = 'Zach Szafran, Geoffrey Anderson, Jeremy Williams'
 
 import urllib
 import urllib2

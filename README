@@ -1,3 +1,6 @@
+Updated 5/13/2014 by ctrlaltdel121
+Originally via zszafran/MyCourses-Scraper
+
 [Purpose]
 This python script will login to your MyCourses account and navigate its way through each course. When in a course, this script will dump all the news, course content and dropbox submissions to your output location. After running the script you should have a directory that represents each course which will contain all of that course's content.
 
