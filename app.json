@@ -1,0 +1,15 @@
+{
+  "name": "MyCourses-Scraper",
+  "scripts": {
+  },
+  "env": {
+  },
+  "formation": {
+  },
+  "addons": [
+
+  ],
+  "buildpacks": [
+
+  ]
+}
